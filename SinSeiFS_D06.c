@@ -24,20 +24,20 @@ void enkripsiAtoz(char *pathNya)
     {
         while(pathNya[i] != '\0')
         {
-            if(!((pathNya[i] >= 0 && pathNya[i]< 65) || (pathNya[i] > 90 && pathNya[i] < 97) || (pathNya[i] > 122 && pathNya[i] <= 127)))
+            if(!((pathNya[i]>=0&&pathNya[i]<65)||(pathNya[i]>90&&pathNya[i]<97)||(pathNya[i]>122&&pathNya[i]<=127)))
             {
-                if(pathNya[i] >= 'A' && pathNya[i] <= 'Z')
+                if(pathNya[i]>='A'&&pathNya[i]<='Z')
                 {
-                    pathNya[i] = 'Z' + 'A' - pathNya[i];
+                    pathNya[i] = 'Z'+'A'-pathNya[i];
                 }
 
-                if(pathNya[i] >= 'a' && pathNya[i] <= 'z')
+                if(pathNya[i]>='a'&&pathNya[i]<='z')
                 {
-                    pathNya[i] = 'z' + 'a' - pathNya[i];
+                    pathNya[i] = 'z'+'a'-pathNya[i];
                 }
             }
 
-            if(!((pathNya[i] >= 0 && pathNya[i]< 65) || (pathNya[i] > 90 && pathNya[i] < 97) || (pathNya[i] > 122 && pathNya[i] <= 127)))
+            if(!((pathNya[i]>= 0&&pathNya[i]< 65)||(pathNya[i]>90&&pathNya[i]<97) || (pathNya[i] > 122 && pathNya[i] <= 127)))
             {
                 pathNya[i] = pathNya[i];
             }
@@ -51,8 +51,10 @@ void renameRecursively(char *daripathNya)
 {
     DIR *dirent;
     struct dirent *direntInit;
-    char file[100], char extFile[100];
-    char sebelumPath[1100], char sesudahPath[1100];
+    char file[100];
+    char extFile[100];
+    char sebelumPath[1100];
+    char sesudahPath[1100];
 
     dirent = opendir(daripathNya);
 
@@ -83,37 +85,42 @@ void renameRecursively(char *daripathNya)
 
         enkripsiAtoz(file);
 
-        //ketika ada extensinya, dia nambahin sama ekstensinya
-        if(extention != NULL)
+        //ketika tidak ada extensinya
+        if(extention == NULL)
         {
-            sprintf(sesudahPath, "%s/%s", daripathNya, file, extention);
+            sprintf(sesudahPath, "%s/%s", daripathNya, file);
             rename(sebelumPath, sesudahPath);
         }
 
+        //ketika ada extensinya
         else if(extention != NULL)
         {
-            sprintf(sesudahPath, "%s/%s", daripathNya, file);
+            //direktory yang di rekursif
+            sprintf(sesudahPath, "%s/%s%s", daripathNya, file, extention);
             rename(sebelumPath, sesudahPath);
         }
     }
     closedir(dirent);
 }
 
+//1d
 //log file mkdir atoz
 void logfileAtozmkdir(char *pathNya)
 {
     FILE *mkdirlogFile;
-    mkdirlogFile = fopen("atoz.log", "a+");
-    fprintf(f, "mkdir: %s\n", pathNya);
+    mkdirlogFile = fopen("atoz.log", "a");
+    fprintf(mkdirlogFile, "mkdir: %s\n", pathNya);
 }
 
 //log file rename atoz
 void logfileAtozrename(char *pathNya, char *pathNya2)
 {
     FILE *renamelogFile;
-    renamelogFile = fopen("atoz.log", "a+");
-    fprintf(f, "%s-->%s\n", pathNya, pathNya2);
+    renamelogFile = fopen("atoz.log", "a");
+    fprintf(renamelogFile, "%s-->%s\n", pathNya, pathNya2);
 }
+
+//get attribute files
 static int xmp_getattr(const char *pathNya, struct stat *stbuf)
 {
     int temp;
@@ -163,19 +170,20 @@ static int xmp_rename(const char *dari, const char *menuju)
     char daripathNya[1000];
     char menujupathNya[1000];
 
-    sprintf(daripathNya, "%s%s", pathdirektory, dari);
-    sprintf(menujupathNya, "%s%s", pathdirektory, menuju);
+    sprintf(daripathNya, "%s/%s", pathdirektory, dari);
+    sprintf(menujupathNya, "%s/%s", pathdirektory, menuju);
 
-    //ketika atoznya jadi normal decode 
+    //AtoZ -> normal decode
     if(strstr(daripathNya, "Atoz_"))
     {
         if(!strstr(menujupathNya, "Atoz_"))
         {
             renameRecursively(daripathNya);
+            // logfileAtozrename(daripathNya, menujupathNya);
         }
     }
 
-    //ketika normal berubah jadi atoz encode
+    //normal decode -> AtoZ
     if(!strstr(daripathNya, "Atoz_"))
     {
         if(strstr(menujupathNya, "Atoz_"))
@@ -183,14 +191,23 @@ static int xmp_rename(const char *dari, const char *menuju)
             renameRecursively(daripathNya);
             logfileAtozrename(daripathNya, menujupathNya);
         }
+        // logfileAtozrename(daripathNya, menujupathNya);
     }
+    temp = rename(daripathNya, menujupathNya);
+
+    //jika gagal 
+    if(temp == -1)
+    {
+        return -errno;
+    }
+    return 0;
 }
 
-static int xmp_readdir(const char *pathNya, void *buf, fuse_file_dir_t filler, off_t setOff, struct fuse_file_info *ffi)
+static int xmp_readdir(const char *pathNya, void *buf, fuse_fill_dir_t filler, off_t setOff, struct fuse_file_info *ffi)
 {
     char filePath[1000];
 
-    if(stcmp(path, "/") == 0)
+    if(strcmp(pathNya, "/") == 0)
     {
         pathNya = pathdirektory;
         sprintf(filePath, "%s", pathNya);
@@ -215,13 +232,13 @@ static int xmp_readdir(const char *pathNya, void *buf, fuse_file_dir_t filler, o
 
     while ((direntInit = readdir(dirent)) != NULL)
     {
-        struct stat statics;
+        struct stat sta;
 
-        memset(&statics, 0, sizeof(statics));
+        memset(&sta, 0, sizeof(sta));
 
-        statics.statics_ino = direntInit->d_ino;
-        statics.statics_mode = direntInit->d_type << 12;
-        temp = (filler(buf, direntInit->d_name, &statics, 0));
+        sta.st_ino = direntInit->d_ino;
+        sta.st_mode = direntInit->d_type << 12;
+        temp = (filler(buf, direntInit->d_name, &sta, 0));//kalo ga berubah
 
         if(temp != 0)
         {
