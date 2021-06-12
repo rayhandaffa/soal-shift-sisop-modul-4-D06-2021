@@ -9,6 +9,7 @@
 #include <sys/time.h>
 
 static const char *pathdirektory = "/home/rayhandapis/Downloads";
+static const char *pathLog = "/home/rayhandapis/SinSeiFS.log";
 
 //no 1
 void enkripsiAtoz(char *pathNya)
@@ -119,6 +120,29 @@ void logfileAtozrename(char *pathNya, char *pathNya2)
     fprintf(renamelogFile, "%s-->%s\n", pathNya, pathNya2);
 }
 
+//no 4
+//buat Log 
+// logInfo
+void logInfo(char *desk)
+{
+    time_t now = time(NULL);
+    struct tm *timeInfo = *localtime(&now);
+    FILE* fileLog = fopen(pathLog, "a");
+    fprintf(fileLog, "info::%d%02d%02d-%02d:%02d:%02d:%s::/%s\n",timeInfo->tm_mday,timeInfo->tm_mon+1,timeInfo->tm_year+1900,timeInfo->tm_hour,timeInfo->tm_min,timeInfo->tm_sec, desk);
+    fclose(fileLog);
+}
+
+//logWarning
+void logWarning(char *desk)
+{
+    time_t now = time(NULL);
+    struct tm *timeInfo = *localtime(&now);
+    FILE* fileLog = fopen(pathLog, "a");
+    fprintf(fileLog, "WARNING::%d%02d%02d-%02d:%02d:%02d:%s::/%s\n",timeInfo->tm_mday,timeInfo->tm_mon+1,timeInfo->tm_year+1900,timeInfo->tm_hour,timeInfo->tm_min,timeInfo->tm_sec, desk);
+    fclose(fileLog);
+}
+
+/*XMP FIELD*/
 //get attribute files
 static int xmp_getattr(const char *pathNya, struct stat *stbuf)
 {
@@ -136,6 +160,8 @@ static int xmp_getattr(const char *pathNya, struct stat *stbuf)
     }
     return 0;
 }
+
+//MKDIR ->make a directory
 static int xmp_mkdir(const char *pathNya, mode_t modeT)
 {
     int temp;
@@ -157,12 +183,15 @@ static int xmp_mkdir(const char *pathNya, mode_t modeT)
         return -errno;
     }
 
-    // char desk(1500);
-    // sprintf(desk, "MKDIR::%s", filePath);
+    //no 4 log mkdir
+    char desk[1500];
+    sprintf(desk, "MKDIR::%s", filePath);
+    logInfo(desk);
     
     return 0;
 }
 
+//RENAME
 static int xmp_rename(const char *dari, const char *menuju)
 {
     int temp; 
@@ -201,9 +230,15 @@ static int xmp_rename(const char *dari, const char *menuju)
     {
         return -errno;
     }
+
+    //no 4 rename
+    char desk[2500];
+    sprintf(desk, "RENAME::%s", daripathNya, menujupathNya);
+    logInfo(desk);
     return 0;
 }
 
+//READDIR
 static int xmp_readdir(const char *pathNya, void *buf, fuse_fill_dir_t filler, off_t setOff, struct fuse_file_info *ffi)
 {
     char filePath[1000];
@@ -250,6 +285,8 @@ static int xmp_readdir(const char *pathNya, void *buf, fuse_fill_dir_t filler, o
 
     return 0;
 }
+
+//READ
 static int xmp_read(const char *pathNya, char *buf, size_t ukuran, off_t setOff, struct fuse_file_info *ffi)
 {
     char filePath[1000];
