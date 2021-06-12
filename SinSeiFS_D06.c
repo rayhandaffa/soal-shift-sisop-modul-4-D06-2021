@@ -126,9 +126,9 @@ void logfileAtozrename(char *pathNya, char *pathNya2)
 void logInfo(char *desk)
 {
     time_t now = time(NULL);
-    struct tm *timeInfo = *localtime(&now);
+    struct tm *timeInfo = localtime(&now);
     FILE* fileLog = fopen(pathLog, "a");
-    fprintf(fileLog, "info::%d%02d%02d-%02d:%02d:%02d:%s::/%s\n",timeInfo->tm_mday,timeInfo->tm_mon+1,timeInfo->tm_year+1900,timeInfo->tm_hour,timeInfo->tm_min,timeInfo->tm_sec, desk);
+    fprintf(fileLog, "INFO::%02d%02d20%02d-%02d:%02d:%02d::%s\n",timeInfo->tm_mday,timeInfo->tm_mon+1,timeInfo->tm_year+1900,timeInfo->tm_hour,timeInfo->tm_min,timeInfo->tm_sec, desk);
     fclose(fileLog);
 }
 
@@ -136,9 +136,9 @@ void logInfo(char *desk)
 void logWarning(char *desk)
 {
     time_t now = time(NULL);
-    struct tm *timeInfo = *localtime(&now);
+    struct tm *timeInfo = localtime(&now);
     FILE* fileLog = fopen(pathLog, "a");
-    fprintf(fileLog, "WARNING::%d%02d%02d-%02d:%02d:%02d:%s::/%s\n",timeInfo->tm_mday,timeInfo->tm_mon+1,timeInfo->tm_year+1900,timeInfo->tm_hour,timeInfo->tm_min,timeInfo->tm_sec, desk);
+    fprintf(fileLog, "WARNING::%02d%02d20%02d-%02d:%02d:%02d::%s\n",timeInfo->tm_mday,timeInfo->tm_mon+1,timeInfo->tm_year+1900,timeInfo->tm_hour,timeInfo->tm_min,timeInfo->tm_sec, desk);
     fclose(fileLog);
 }
 
@@ -207,7 +207,6 @@ static int xmp_rename(const char *dari, const char *menuju)
         if(!strstr(menujupathNya, "AtoZ_"))
         {
             renameRecursively(daripathNya);
-            
         }
         
     }
@@ -233,7 +232,7 @@ static int xmp_rename(const char *dari, const char *menuju)
 
     //no 4 rename
     char desk[2500];
-    sprintf(desk, "RENAME::%s", daripathNya, menujupathNya);
+    sprintf(desk, "RENAME::%s::%s", daripathNya, menujupathNya);
     logInfo(desk);
     return 0;
 }
@@ -327,12 +326,56 @@ static int xmp_read(const char *pathNya, char *buf, size_t ukuran, off_t setOff,
 
 
 }
+//RMDIR
+static int xmp_rmdir(const char *pathNya)
+{
+    int simp;
+    char filePath[1000];
+
+    sprintf(filePath, "%s%s", pathdirektory, pathNya);
+
+    simp = rmdir(filePath);
+    if(simp == -1)
+    {
+        return -errno;
+    }
+
+    //warning in unlink
+    char desk[1512];
+    sprintf(desk, "RMDIR::%s", filePath);
+    logWarning(desk);
+
+    return 0;
+}
+//UNLINK 
+static int xmp_unlink(const char *pathNya)
+{
+    int simp;
+    char filePath[1000];
+
+    sprintf(filePath, "%s%s", pathdirektory, pathNya);
+
+    simp = unlink(filePath);
+    if(simp == -1)
+    {
+        return -errno;
+    }
+
+    //warning in unlink
+    char desk[1512];
+    sprintf(desk, "UNLINK::%s", filePath);
+    logWarning(desk);
+
+    return 0;
+}
 static struct fuse_operations xmp_oper = {
     .getattr = xmp_getattr,
     .mkdir = xmp_mkdir,
     .rename = xmp_rename,
     .readdir = xmp_readdir,
     .read = xmp_read,
+    .unlink = xmp_unlink,
+    .rmdir = xmp_rmdir
 };
 
 int main(int argc, char *argv[])
